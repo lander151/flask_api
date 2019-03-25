@@ -45,7 +45,7 @@ def check_if_token_in_blacklist(decrypted_token):
 import endpoints, models
 
 
-api.add_resource(endpoints.UserRegistration, '/registration')
+api.add_resource(endpoints.UserRegistration, '/register')
 api.add_resource(endpoints.UserLogin, '/login')
 api.add_resource(endpoints.UserLogoutAccess, '/logout/access')
 api.add_resource(endpoints.UserLogoutRefresh, '/logout/refresh')

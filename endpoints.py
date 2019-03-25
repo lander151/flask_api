@@ -1,24 +1,25 @@
+from datetime import timedelta
 from flask import jsonify, request
 from flask_restful import Resource, reqparse
-
-from run import db
-from utils import formatted_results
-
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
-from models import UserModel, RevokedTokenModel, CitiesModel, Association
 
-parser = reqparse.RequestParser()
-parser.add_argument('username', help='This field cannot be blank', required=True)
-parser.add_argument('password', help='This field cannot be blank', required=True)
-parser.add_argument('email', help='This field cannot be blank', required=True)
+from models import UserModel, RevokedTokenModel, CitiesModel, Association
+from config import EXP_TIME
+from run import db
+from utils import formatted_results
 
 
 class UserRegistration(Resource):
     # TODO check if user exists
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('username', help='This field cannot be blank', required=True)
+        self.parser.add_argument('password', help='This field cannot be blank', required=True)
+        self.parser.add_argument('email', help='This field cannot be blank', required=True)
 
     def post(self):
-        user_data = parser.parse_args()
+        user_data = self.parser.parse_args()
         username = user_data['username']
         password = UserModel.generate_hash(user_data['password'])
         email = user_data['email']
@@ -46,9 +47,14 @@ class UserRegistration(Resource):
 
 
 class UserLogin(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('username', help='This field cannot be blank', required=True)
+        self.parser.add_argument('password', help='This field cannot be blank', required=True)
+
     def post(self):
 
-        login_data = parser.parse_args()
+        login_data = self.parser.parse_args()
 
         current_user = UserModel.find_by_username(login_data['username'])
 
@@ -59,7 +65,8 @@ class UserLogin(Resource):
 
         if UserModel.verify_hash(login_data['password'], current_user.password):
 
-            access_token = create_access_token(identity=login_data['username'])
+            access_token = create_access_token(identity=login_data['username'],
+                                               expires_delta=timedelta(minutes=EXP_TIME))
             refresh_token = create_refresh_token(identity=login_data['username'])
 
             return ({
@@ -104,8 +111,7 @@ class TokenRefresh(Resource):
 
 
 class Cities(Resource):
-
-    # @jwt_required
+    @jwt_required
     def get(self):
         lat = request.args.get('lat')
         lon = request.args.get('lon')
@@ -118,7 +124,7 @@ class Cities(Resource):
 
 
 class UserCities(Resource):
-
+    @jwt_required
     def post(self):
             user_id = request.json.get('user_id')
             city_id = request.json.get('city_id')
@@ -129,6 +135,7 @@ class UserCities(Resource):
 
             return ({'inserted': 'ok'}), 200, {'ContentType': 'application/json'}
 
+    @jwt_required
     def get(self):
             result_list = list()
             user_id = request.args.get('user_id')
@@ -150,6 +157,7 @@ class UserCities(Resource):
                 result_list.append(formatted_results(result))
             return result_list, 200, {'ContentType': 'application/json'}
 
+    @jwt_required
     def delete(self):
             user_id = request.args.get('user_id')
             city_id = request.args.get('city_id')
