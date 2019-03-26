@@ -2,7 +2,7 @@ from datetime import timedelta
 from flask import jsonify, request
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
-                                get_jwt_identity, get_raw_jwt)
+                                get_jwt_identity, get_raw_jwt, get_jwt_claims)
 
 from models import UserModel, RevokedTokenModel, CitiesModel, Association
 from config import TOKEN_EXP_TIME
@@ -57,15 +57,17 @@ class UserLogin(Resource):
         login_data = self.parser.parse_args()
 
         current_user = UserModel.find_by_username(login_data['username'])
-
         if not current_user:
             return ({"result': 'User %s doesn't exists" % login_data['username']}), \
                    404, \
                    {'ContentType': 'application/json'}
 
         if UserModel.verify_hash(login_data['password'], current_user.password):
-
-            access_token = create_access_token(identity=login_data['username'],
+            payload = {
+                'id': current_user.id,
+                'username': current_user.username
+            }
+            access_token = create_access_token(identity=login_data['username'], user_claims=payload,
                                                expires_delta=timedelta(minutes=TOKEN_EXP_TIME))
             refresh_token = create_refresh_token(identity=login_data['username'])
 
@@ -126,7 +128,9 @@ class Cities(Resource):
 class UserCities(Resource):
     @jwt_required
     def post(self):
-            user_id = request.json.get('user_id')
+            user = get_jwt_claims()
+
+            user_id = user.get('id')
             city_id = request.json.get('city_id')
 
             a = Association(cities_id=city_id, users_id=user_id)
@@ -138,7 +142,9 @@ class UserCities(Resource):
     @jwt_required
     def get(self):
             result_list = list()
-            user_id = request.args.get('user_id')
+
+            user = get_jwt_claims()
+            user_id = user.get('id')
 
             results = Association.query.join(CitiesModel, Association.cities_id == CitiesModel.id).add_columns(
                 CitiesModel.id,
@@ -159,11 +165,13 @@ class UserCities(Resource):
 
     @jwt_required
     def delete(self):
-            user_id = request.args.get('user_id')
-            city_id = request.args.get('city_id')
+        user = get_jwt_claims()
+        user_id = user.get('id')
 
-            asso = Association.query.filter_by(users_id=user_id, cities_id=city_id).first()
-            db.session.delete(asso)
-            db.session.commit()
+        city_id = request.args.get('city_id')
 
-            return {'deleted': 'ok'}, 204, {'ContentType': 'application/json'}
+        asso = Association.query.filter_by(users_id=user_id, cities_id=city_id).first()
+        db.session.delete(asso)
+        db.session.commit()
+
+        return {'deleted': 'ok'}, 204, {'ContentType': 'application/json'}
