@@ -4,21 +4,14 @@ from flask_restful import Api
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 
+from config import POSTGRES_CONFIG, SECRET_KEY, JWT_BLACKLIST_TOKEN_CHECKS, JWT_SECRET_KEY
 
 app = Flask(__name__)
 api = Api(app)
 
-POSTGRES = {
-    'user': 'angular',
-    'pw': 'angular',
-    'db': 'angular_app',
-    'host': 'localhost',
-    'port': '5432',
-}
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://%(user)s:\
-%(pw)s@%(host)s:%(port)s/%(db)s' % POSTGRES
+app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRES_CONFIG
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'some-secret-string'
+app.config['SECRET_KEY'] = SECRET_KEY
 
 db = SQLAlchemy(app)
 CORS(app)
@@ -29,11 +22,11 @@ def create_tables():
     db.create_all()
 
 
-app.config['JWT_SECRETE_KEY'] = 'jwt-secret-string'
+app.config['JWT_SECRETE_KEY'] = JWT_SECRET_KEY
 jwt = JWTManager(app)
 
 app.config['JWT_BLACKLIST_ENABLED'] = True
-app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = JWT_BLACKLIST_TOKEN_CHECKS
 
 
 @jwt.token_in_blacklist_loader

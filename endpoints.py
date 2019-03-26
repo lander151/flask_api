@@ -5,7 +5,7 @@ from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_r
                                 get_jwt_identity, get_raw_jwt)
 
 from models import UserModel, RevokedTokenModel, CitiesModel, Association
-from config import EXP_TIME
+from config import TOKEN_EXP_TIME
 from run import db
 from utils import formatted_results
 
@@ -66,7 +66,7 @@ class UserLogin(Resource):
         if UserModel.verify_hash(login_data['password'], current_user.password):
 
             access_token = create_access_token(identity=login_data['username'],
-                                               expires_delta=timedelta(minutes=EXP_TIME))
+                                               expires_delta=timedelta(minutes=TOKEN_EXP_TIME))
             refresh_token = create_refresh_token(identity=login_data['username'])
 
             return ({
