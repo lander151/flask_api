@@ -1,8 +1,10 @@
 from datetime import timedelta
 from flask import jsonify, request
-from flask_restful import Resource, reqparse
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
-                                get_jwt_identity, get_raw_jwt, get_jwt_claims)
+from flask.views import MethodView
+from flask_jwt_extended import (
+    create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
+    get_jwt_identity, get_raw_jwt, get_jwt_claims,
+)
 
 from models import UserModel, RevokedTokenModel, CitiesModel, Association
 from config import TOKEN_EXP_TIME
@@ -10,16 +12,11 @@ from run import db
 from utils import formatted_results
 
 
-class UserRegistration(Resource):
-    # TODO check if user exists
-    def __init__(self):
-        self.parser = reqparse.RequestParser()
-        self.parser.add_argument('username', help='This field cannot be blank', required=True)
-        self.parser.add_argument('password', help='This field cannot be blank', required=True)
-        self.parser.add_argument('email', help='This field cannot be blank', required=True)
+class UserRegistration(MethodView):
+    # TODO: check if user exists
 
     def post(self):
-        user_data = self.parser.parse_args()
+        user_data = request.json
         username = user_data['username']
         password = UserModel.generate_hash(user_data['password'])
         email = user_data['email']
@@ -29,7 +26,7 @@ class UserRegistration(Resource):
             email=email
         )
         if UserModel.find_by_username(user_data['username']):
-            return {'message': 'User {} already exists'.format(user_data['username'])}
+            return jsonify({'message': 'User {} already exists'.format(user_data['username'])})
 
         new_user.save_to_db()
 
@@ -37,28 +34,23 @@ class UserRegistration(Resource):
         refresh_token = create_refresh_token(identity=user_data['username'])
 
         if new_user:
-            return {
+            return jsonify({
                 'result': 'created user %s' % username,
                 'access_token': access_token,
                 'refresh_token': refresh_token
-            }, 201, {'ContentType': 'application/json'}
+            }), 201, {'ContentType': 'application/json'}
         else:
-            return ({'result': 'error creating user'}), 400, {'ContentType': 'application/json'}
+            return jsonify({'result': 'error creating user'}), 400, {'ContentType': 'application/json'}
 
 
-class UserLogin(Resource):
-    def __init__(self):
-        self.parser = reqparse.RequestParser()
-        self.parser.add_argument('username', help='This field cannot be blank', required=True)
-        self.parser.add_argument('password', help='This field cannot be blank', required=True)
+class UserLogin(MethodView):
 
     def post(self):
-
-        login_data = self.parser.parse_args()
+        login_data = request.json
 
         current_user = UserModel.find_by_username(login_data['username'])
         if not current_user:
-            return ({"result': 'User %s doesn't exists" % login_data['username']}), \
+            return jsonify({"result': 'User %s doesn't exists" % login_data['username']}), \
                    404, \
                    {'ContentType': 'application/json'}
 
@@ -71,48 +63,48 @@ class UserLogin(Resource):
                                                expires_delta=timedelta(minutes=TOKEN_EXP_TIME))
             refresh_token = create_refresh_token(identity=login_data['username'])
 
-            return ({
+            return jsonify({
                 'result': 'Logged in as %s' % login_data['username'],
                 'access_token': access_token,
                 'refresh_token': refresh_token
             }), 201, {'ContentType': 'application/json'}
         else:
-            return ({'result': 'error with the login'}), 400, {'ContentType': 'application/json'}
+            return jsonify({'result': 'error with the login'}), 400, {'ContentType': 'application/json'}
 
 
-class UserLogoutAccess(Resource):
+class UserLogoutAccess(MethodView):
     @jwt_required
     def post(self):
         jti = get_raw_jwt()['jti']
         try:
             revoked_token = RevokedTokenModel(jti=jti)
             revoked_token.add()
-            return {'message': 'Access token has been revoked'}
+            return jsonify({'message': 'Access token has been revoked'})
         except:
-            return {'message': 'Something went wrong'}, 500
+            return jsonify({'message': 'Something went wrong'}), 500
 
 
-class UserLogoutRefresh(Resource):
+class UserLogoutRefresh(MethodView):
     @jwt_refresh_token_required
     def post(self):
         jti = get_raw_jwt()['jti']
         try:
             revoked_token = RevokedTokenModel(jti=jti)
             revoked_token.add()
-            return {'message': 'Refresh token has been revoked'}
+            return jsonify({'message': 'Refresh token has been revoked'})
         except:
-            return {'message': 'Something went wrong'}, 500
+            return jsonify({'message': 'Something went wrong'}), 500
 
 
-class TokenRefresh(Resource):
+class TokenRefresh(MethodView):
     @jwt_refresh_token_required
     def post(self):
         current_user = get_jwt_identity()
         access_token = create_access_token(identity=current_user)
-        return {'access_token': access_token}
+        return jsonify({'access_token': access_token})
 
 
-class Cities(Resource):
+class Cities(MethodView):
     @jwt_required
     def get(self):
         lat = request.args.get('lat')
@@ -120,12 +112,13 @@ class Cities(Resource):
         result = CitiesModel().find_by_coords(lat, lon)
 
         if not result:
-            return ({'result': 'NO DATA'}), 404
+            return jsonify({'result': 'NO DATA'}), 404
 
         return formatted_results(result), 200
 
 
-class UserCities(Resource):
+class UserCities(MethodView):
+
     @jwt_required
     def post(self):
             user = get_jwt_claims()
@@ -137,7 +130,7 @@ class UserCities(Resource):
             db.session.add(a)
             db.session.commit()
 
-            return ({'inserted': 'ok'}), 200, {'ContentType': 'application/json'}
+            return jsonify({'inserted': 'ok'}), 200, {'ContentType': 'application/json'}
 
     @jwt_required
     def get(self):
@@ -161,7 +154,7 @@ class UserCities(Resource):
 
             for result in results:
                 result_list.append(formatted_results(result))
-            return result_list, 200, {'ContentType': 'application/json'}
+            return jsonify(result_list), 200, {'ContentType': 'application/json'}
 
     @jwt_required
     def delete(self):
@@ -174,4 +167,4 @@ class UserCities(Resource):
         db.session.delete(asso)
         db.session.commit()
 
-        return {'deleted': 'ok'}, 204, {'ContentType': 'application/json'}
+        return jsonify({'deleted': 'ok'}), 204, {'ContentType': 'application/json'}

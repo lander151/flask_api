@@ -1,9 +1,10 @@
 import geojson
+from flask import jsonify
 from geoalchemy2.shape import to_shape
 
 
 def formatted_results(data):
-    return {
+    return jsonify({
         'id': data.id,
         'country': data.country,
         'region': data.region,
@@ -12,7 +13,7 @@ def formatted_results(data):
         'cityName': data.city,
         'geom': get_geom(data.geom),
         'geometry': get_lat_lon(data.geom)
-    }
+    })
 
 
 def get_lat_lon(geom):

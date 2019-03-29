@@ -1,4 +1,3 @@
-TOKEN_EXP_TIME = 90
 POSTGRES = {
     'user': 'angular',
     'pw': 'angular',
@@ -6,7 +5,7 @@ POSTGRES = {
     'host': 'localhost',
     'port': '5432',
 }
-POSTGRES_CONFIG = 'postgresql://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s' % POSTGRES
+POSTGRES_CONFIG_URI = 'postgresql://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s' % POSTGRES
 
 TOKEN_EXP_TIME = 90
 
