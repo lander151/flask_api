@@ -34,7 +34,7 @@ def check_if_token_in_blacklist(decrypted_token):
 import models
 from endpoints import (
     UserRegistration, UserCities, UserLogin,
-    UserLogoutAccess, UserLogoutRefresh, TokenRefresh, Cities
+    UserLogoutAccess, UserLogoutRefresh, TokenRefresh, Cities, Users
 )
 
 app.add_url_rule('/register', view_func=UserRegistration.as_view('register'))
@@ -44,6 +44,7 @@ app.add_url_rule('/logout/refresh', view_func=UserLogoutRefresh.as_view('logout_
 app.add_url_rule('/token/refresh', view_func=TokenRefresh.as_view('token_refresh'))
 app.add_url_rule('/cities', view_func=Cities.as_view('cities'))
 app.add_url_rule('/userCity', view_func=UserCities.as_view('user_city'))
+app.add_url_rule('/user', view_func=Users.as_view('users'))
 
 
 def create_app():

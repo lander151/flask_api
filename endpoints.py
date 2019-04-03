@@ -43,6 +43,17 @@ class UserRegistration(MethodView):
             return jsonify({'result': 'error creating user'}), 400, {'ContentType': 'application/json'}
 
 
+class Users(MethodView):
+
+    def get(self):
+        result = UserModel.return_all()
+
+        if not result:
+            return ({'result': 'NO DATA'}), 404
+
+        return jsonify(result), 200
+
+
 class UserLogin(MethodView):
 
     def post(self):
@@ -154,6 +165,8 @@ class UserCities(MethodView):
 
             for result in results:
                 result_list.append(formatted_results(result))
+            import pdb
+            pdb.set_trace()
             return jsonify(result_list), 200, {'ContentType': 'application/json'}
 
     @jwt_required

@@ -1,3 +1,5 @@
+import pdb
+
 from sqlalchemy import func, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from run import db
@@ -46,9 +48,11 @@ class UserModel(db.Model):
     @classmethod
     def return_all(cls):
         def to_json(x):
+
             return {
+                'id': x.id,
                 'username': x.username,
-                'password': x.password
+                'created_at': x.created_at,
             }
 
         return {'users': list(map(lambda x: to_json(x), UserModel.query.all()))}
