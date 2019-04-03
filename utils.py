@@ -1,5 +1,4 @@
 import geojson
-from flask import jsonify
 from geoalchemy2.shape import to_shape
 
 

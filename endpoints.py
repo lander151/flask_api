@@ -165,8 +165,6 @@ class UserCities(MethodView):
 
             for result in results:
                 result_list.append(formatted_results(result))
-            import pdb
-            pdb.set_trace()
             return jsonify(result_list), 200, {'ContentType': 'application/json'}
 
     @jwt_required

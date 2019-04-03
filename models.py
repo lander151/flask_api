@@ -1,5 +1,3 @@
-import pdb
-
 from sqlalchemy import func, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from run import db
@@ -48,7 +46,6 @@ class UserModel(db.Model):
     @classmethod
     def return_all(cls):
         def to_json(x):
-
             return {
                 'id': x.id,
                 'username': x.username,
